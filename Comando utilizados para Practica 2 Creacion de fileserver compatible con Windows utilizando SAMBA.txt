@@ -1,0 +1,74 @@
+Comando utilizados para Practica 2 Creacion de fileserver compatible con Windows utilizando SAMBA 
+
+#Actualizar repositorios y limpiar posibles errores
+
+sudo apt clean
+sudo apt update
+sudo apt --fix-broken install
+
+# Bloquear paquetes conflictivos de backports
+
+sudo nano /etc/apt/preferences.d/99-no-backports.pref
+
+#contenido
+
+Package: *
+Pin: release a=bookworm-backports
+Pin-Priority: 100
+
+#Instalar SAMBA desde repositorio estable (bookworm)
+
+sudo apt install -t bookworm libtdb1=1.4.8-2 python3-tdb samba -y
+
+#Crear carpeta compartida y los archivos
+
+sudo mkdir -p /srv/samba/OS3
+cd /srv/samba/OS3
+for i in {1..100}; do echo "Archivo $i" > "Adrian$i.txt"; done
+
+#Crear grupo y usuario de Samba
+
+sudo groupadd sambagrupo
+sudo useradd -M -s /sbin/nologin -G sambagrupo adrianuser
+sudo smbpasswd -a adrianuser
+
+
+# Dar permisos correctos a la carpeta compartida
+
+sudo chown -R adrianuser:sambagrupo /srv/samba/OS3
+sudo chmod -R 770 /srv/samba/OS3
+
+# Editar configuración de Samba
+
+sudo nano /etc/samba/smb.conf
+
+#contenido
+
+[OS3]
+   path = /srv/samba/OS3
+   writable = yes
+   browseable = yes
+   valid users = adrianuser
+   force group = sambagrupo
+   create mask = 0660
+   directory mask = 0770
+
+#Verificar sintaxis del archivo
+
+testparm
+
+
+#Iniciar y habilitar servicios Samba
+
+sudo systemctl enable smbd --now
+sudo systemctl enable nmbd --now
+
+#En Windows 10 mapear
+
+\\10.0.0.45\OS3
+
+#colocar Usuario: adrianuser y Contraseña
+
+
+
+

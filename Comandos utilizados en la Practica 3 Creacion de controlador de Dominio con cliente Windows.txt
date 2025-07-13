@@ -1,0 +1,43 @@
+Comandos utilizados en la Practica 3 Creacion de controlador de Dominio con cliente Windows
+
+#Instalación de paquetes necesarios para Samba AD DC:
+
+sudo apt install samba krb5-config krb5-user winbind smbclient -y
+
+# Configuración inicial del dominio Samba
+
+sudo samba-tool domain provision --use-rfc2307 --interactive
+
+# Copia del archivo generado de Kerberos:
+
+sudo cp /var/lib/samba/private/krb5.conf /etc/krb5.conf
+
+#. Revisión y ajuste del archivo hosts:
+
+sudo nano /etc/hosts
+
+#incluir
+
+10.0.0.45 dc.ose3.inet dc
+127.0.0.1 localhost
+
+# Iniciar el servicio Samba como AD DC:
+
+sudo systemctl restart samba-ad-dc
+sudo systemctl status samba-ad-dc
+
+#Verificar zonas DNS creadas automáticamente:
+
+sudo samba-tool dns zonelist localhost -U administrator
+
+#Creación del usuario lanegracubana
+
+sudo samba-tool user create lanegracubana 2019-8529AA
+
+# Probar que el usuario existe y es válido
+
+sudo samba-tool user show lanegracubana
+kinit lanegracubana
+
+
+
