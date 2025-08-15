@@ -1,49 +1,29 @@
-Comando utilizados para Practica 2 Creacion de fileserver compatible con Windows utilizando SAMBA 
+#Servidor Samba
 
-#Actualizar repositorios y limpiar posibles errores
-
+# 1. Actualizar y limpiar paquetes
 sudo apt clean
 sudo apt update
 sudo apt --fix-broken install
 
-# Bloquear paquetes conflictivos de backports
+# 2. Instalar Samba (sin amarrar versiones, salvo que haya conflicto)
+sudo apt install samba -y
 
-sudo nano /etc/apt/preferences.d/99-no-backports.pref
-
-#contenido
-
-Package: *
-Pin: release a=bookworm-backports
-Pin-Priority: 100
-
-#Instalar SAMBA desde repositorio estable (bookworm)
-
-sudo apt install -t bookworm libtdb1=1.4.8-2 python3-tdb samba -y
-
-#Crear carpeta compartida y los archivos
-
+# 3. Crear carpeta compartida
 sudo mkdir -p /srv/samba/OS3
-cd /srv/samba/OS3
-for i in {1..100}; do echo "Archivo $i" > "Adrian$i.txt"; done
+for i in $(seq 1 100); do echo "Archivo $i" > /srv/samba/Adrian$i.txt; done
 
-#Crear grupo y usuario de Samba
-
+# 4. Crear grupo y usuario de Samba
 sudo groupadd sambagrupo
 sudo useradd -M -s /sbin/nologin -G sambagrupo adrianuser
 sudo smbpasswd -a adrianuser
 
-
-# Dar permisos correctos a la carpeta compartida
-
+# 5. Dar permisos a carpeta
 sudo chown -R adrianuser:sambagrupo /srv/samba/OS3
 sudo chmod -R 770 /srv/samba/OS3
 
-# Editar configuración de Samba
-
+# 6. Configurar Samba
 sudo nano /etc/samba/smb.conf
-
-#contenido
-
+# Agregar al final:
 [OS3]
    path = /srv/samba/OS3
    writable = yes
@@ -52,23 +32,58 @@ sudo nano /etc/samba/smb.conf
    force group = sambagrupo
    create mask = 0660
    directory mask = 0770
+   read only = no
+   guest ok = no
 
-#Verificar sintaxis del archivo
-
+# 7. Validar configuración
 testparm
 
+# 8. Iniciar y habilitar servicio
+sudo systemctl enable --now smbd nmbd
 
-#Iniciar y habilitar servicios Samba
+# 9. Abrir firewall (si aplica)
+sudo ufw allow samba
 
-sudo systemctl enable smbd --now
-sudo systemctl enable nmbd --now
 
-#En Windows 10 mapear
+
+#Cliente Windows
+
+#1-Abrir Explorador de archivos → botón derecho en Este equipo → Conectar a unidad de red.
+
+#2-Seleccionar letra de unidad (ej. Z:).
+
+#3-En Carpeta escribir:
 
 \\10.0.0.45\OS3
 
-#colocar Usuario: adrianuser y Contraseña
+#4-Marcar Conectar de nuevo al iniciar sesión.
 
+#5-Ingresar usuario y contraseña:
+
+#Usuario: adrianuser
+#Contraseña: (la que pusiste en smbpasswd)
+
+#6-Validar que ves los 100 archivos.
+
+#7-Abrir Adrian99.txt, agregar:  el zumzum de la carabela
+
+#Guardar y comprobar desde Linux:
+
+cat /srv/samba/OS3/Adrian99.txt
+
+
+
+#Buenas prácticas
+
+#Deshabilitar guest ok para evitar acceso no autorizado.
+
+#Usar read only = no explícito para mayor claridad.
+
+#En Windows, si no se conecta, ejecutar cmd como administrador y limpiar caché de credenciales: 
+net use * /delete /y
+
+#Mantener Samba actualizado:
+sudo apt update && sudo apt upgrade samba -y
 
 
 
