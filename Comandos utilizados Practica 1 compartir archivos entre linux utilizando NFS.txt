@@ -1,49 +1,56 @@
-Comandos utilizados Practica 1: compartir archivos entre linux utilizando NFS 
+#Servidor NFS
 
-sudo apt update
-sudo apt install nfs-kernel-server -y
+# 1. Actualizar e instalar NFS server
+sudo apt update && sudo apt install nfs-kernel-server -y
 
+# 2. Crear carpeta para compartir
 sudo mkdir -p /srv/nfs/OS3
-cd /srv/nfs/OS3
 
-
-# Crear 100 archivos Adrian1.txt ... Adrian100.txt
-
-for i in {1..100}; do
-    echo "Este es el archivo Adrian$i.txt" > Adrian$i.txt
+# 3. Crear 100 archivos
+for i in $(seq 1 100); do
+    echo "Este es el archivo Adrian$i.txt" > /srv/nfs/OS3/Adrian$i.txt
 done
 
-
+# 4. Permisos para acceso anónimo
 sudo chown nobody:nogroup /srv/nfs/OS3
-sudo chmod 0775 /srv/nfs/OS3
+sudo chmod 777 /srv/nfs/OS3
 
+# 5. Configurar exportación
 sudo nano /etc/exports
+# Agregar:
+# /srv/nfs/OS3 10.0.0.35(rw,sync,no_subtree_check,no_root_squash)
 
-#colocar:
-/srv/nfs/OS3 10.0.0.35(rw,sync,no_subtree_check,no_root_squash)
-
+# 6. Aplicar cambios y reiniciar NFS
 sudo exportfs -rav
-sudo systemctl restart nfs-kernel-server
+sudo systemctl enable --now nfs-kernel-server
 
-showmount -e 10.0.0.45
+# 7. Verificar exportación
+showmount -e localhost
 
-#maquina cliente
 
-sudo apt update
-sudo apt install nfs-common -y
 
+#Cliente Linux
+
+
+# 1. Instalar cliente NFS
+sudo apt update && sudo apt install nfs-common -y
+
+# 2. Crear punto de montaje
 sudo mkdir -p /mnt/OS3
+
+# 3. Montar manualmente para probar
 sudo mount 10.0.0.45:/srv/nfs/OS3 /mnt/OS3
 
-ls /mnt/OS3
+# 4. Validar acceso
+ls -l /mnt/OS3 | head
 
+# 5. Montaje automático al inicio
 sudo nano /etc/fstab
+# Agregar línea:
+# 10.0.0.45:/srv/nfs/OS3 /mnt/OS3 nfs defaults 0 0
 
-#incluir
-
-10.0.0.45:/srv/nfs/OS3 /mnt/OS3 nfs defaults 0 0
-
-
-sudo reboot
+# 6. Probar sin reiniciar
+sudo mount -a
 ls /mnt/OS3
+
 
