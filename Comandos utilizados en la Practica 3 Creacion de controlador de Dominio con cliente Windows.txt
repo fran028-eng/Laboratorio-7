@@ -1,43 +1,74 @@
 Comandos utilizados en la Practica 3 Creacion de controlador de Dominio con cliente Windows
 
-#Instalación de paquetes necesarios para Samba AD DC:
+#Servidor Linux – Samba AD DC
 
-sudo apt install samba krb5-config krb5-user winbind smbclient -y
 
-# Configuración inicial del dominio Samba
 
+# 1. Actualizar repositorios
+sudo apt update && sudo apt upgrade -y
+
+# 2. Instalar paquetes necesarios para AD DC
+sudo apt install samba samba-dsdb-modules samba-vfs-modules krb5-config krb5-user winbind smbclient -y
+
+# 3. Provisionar el dominio
 sudo samba-tool domain provision --use-rfc2307 --interactive
+# Responder:
+# Realm: SO3.INET
+# Domain: SO3
+# Server Role: dc
+# DNS backend: SAMBA_INTERNAL
+# DNS forwarder IP: (DNS externo, ej. 8.8.8.8)
+# Administrator password: (elige uno fuerte) Ortiz2019-8529
 
-# Copia del archivo generado de Kerberos:
-
+# 4. Configurar Kerberos
 sudo cp /var/lib/samba/private/krb5.conf /etc/krb5.conf
 
-#. Revisión y ajuste del archivo hosts:
-
+# 5. Editar /etc/hosts
 sudo nano /etc/hosts
+# Agregar:
+# 10.0.0.45 dc.so3.inet dc
+# 127.0.0.1 localhost
 
-#incluir
+# 6. Iniciar y habilitar servicio Samba AD DC
+sudo systemctl enable --now samba-ad-dc
 
-10.0.0.45 dc.ose3.inet dc
-127.0.0.1 localhost
-
-# Iniciar el servicio Samba como AD DC:
-
-sudo systemctl restart samba-ad-dc
-sudo systemctl status samba-ad-dc
-
-#Verificar zonas DNS creadas automáticamente:
-
+# 7. Verificar zonas DNS
 sudo samba-tool dns zonelist localhost -U administrator
 
-#Creación del usuario lanegracubana
+# 8. Crear usuario requerido
+sudo samba-tool user create lanegracubana Ortiz2019-8529
 
-sudo samba-tool user create lanegracubana 2019-8529AA
-
-# Probar que el usuario existe y es válido
-
+# 9. Verificar usuario
 sudo samba-tool user show lanegracubana
-kinit lanegracubana
 
+# 10. Probar autenticación Kerberos
+kinit lanegracubana@SO3.INET
+
+
+
+Cliente Windows – Unirse al dominio
+
+#1-Cambiar nombre del equipo y configurar IP fija en la misma red que el servidor.
+
+#2-En propiedades del sistema → "Cambiar configuración" → "Unirse a un dominio".
+
+#3-Escribir:
+SO3.INET
+
+
+#4-Usuario:
+lanegracubana
+
+#Contraseña:
+Ortiz2019-8529
+
+
+#5-Reiniciar Windows y en pantalla de login elegir "Otro usuario".
+
+#6-Ingresar credenciales:
+SO3\lanegracubana
+
+#Contraseña:
+Ortiz2019-8529
 
 
